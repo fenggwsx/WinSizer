@@ -20,20 +20,32 @@
 
 CWinSizerDlg::CWinSizerDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_WINSIZER_DIALOG, pParent)
+	, m_winWidth(0)
+	, m_winHeight(0)
+	, m_bTopWindow(FALSE)
+	, m_bCaptureVisibleOnly(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_pWnd = NULL;
 }
 
 void CWinSizerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_CHECK_CAPTURE_VISIBLE_ONLY, m_checkCaptureVisibleOnly);
+	DDX_Text(pDX, IDC_EDIT_WIDTH, m_winWidth);
+	DDX_Text(pDX, IDC_EDIT_HEIGHT, m_winHeight);
+	DDX_Check(pDX, IDC_CHECK_TOP, m_bTopWindow);
+	DDX_Check(pDX, IDC_CHECK_CAPTURE_VISIBLE_ONLY, m_bCaptureVisibleOnly);
 }
 
 BEGIN_MESSAGE_MAP(CWinSizerDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_CAPTURE, &CWinSizerDlg::OnBnClickedBtnCapture)
+	ON_BN_CLICKED(IDC_BTN_RESIZE, &CWinSizerDlg::OnBnClickedBtnResize)
+	ON_BN_CLICKED(IDC_BTN_MAXIMIZE, &CWinSizerDlg::OnBnClickedBtnMaximize)
+	ON_BN_CLICKED(IDC_BTN_MINIMIZE, &CWinSizerDlg::OnBnClickedBtnMinimize)
+	ON_BN_CLICKED(IDC_CHECK_TOP, &CWinSizerDlg::OnBnClickedCheckTop)
 END_MESSAGE_MAP()
 
 
@@ -48,8 +60,9 @@ BOOL CWinSizerDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	//ModifyStyle(WS_CAPTION, 0);
-	m_checkCaptureVisibleOnly.SetCheck(BST_CHECKED);
+	m_bCaptureVisibleOnly = TRUE;
+	m_bTopWindow = TRUE;
+	UpdateData(FALSE);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -95,34 +108,81 @@ HCURSOR CWinSizerDlg::OnQueryDragIcon()
 void CWinSizerDlg::OnBnClickedBtnCapture()
 {
 	CCaptureDlg dlg;
-	dlg.CaptureVisibleOnly(m_checkCaptureVisibleOnly.GetCheck() == BST_CHECKED);
+	dlg.CaptureVisibleOnly(m_bCaptureVisibleOnly);
 	dlg.DoModal();
-	CWnd* pWnd = dlg.GetSelectWindow();
+	m_pWnd = dlg.GetSelectWindow();
 	CString strClassName = _T("");
 	CString strWindowText = _T("");
 	CRect winRect;
 	CString strWidth(_T("0")), strHeight(_T("0"));
-	if (pWnd == NULL)
+	if (m_pWnd == NULL)
 	{
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_CLASS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_CLASS)->SetWindowText(strClassName);
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_NAME)->SetWindowText(strWindowText);
+		GetDlgItem(IDC_EDIT_WIDTH)->EnableWindow(FALSE);
 		GetDlgItem(IDC_EDIT_WIDTH)->SetWindowText(strWidth);
+		GetDlgItem(IDC_EDIT_HEIGHT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_EDIT_HEIGHT)->SetWindowText(strHeight);
 	}
 	else
 	{
-		::GetClassName(pWnd->GetSafeHwnd(), strClassName.GetBuffer(256), 256);
-		::GetWindowText(pWnd->GetSafeHwnd(), strWindowText.GetBuffer(256), 256);
-		pWnd->GetWindowRect(&winRect);
+		::GetClassName(m_pWnd->GetSafeHwnd(), strClassName.GetBuffer(256), 256);
+		::GetWindowText(m_pWnd->GetSafeHwnd(), strWindowText.GetBuffer(256), 256);
+		m_pWnd->GetWindowRect(&winRect);
 		strWidth.Format(_T("%d"), winRect.Width());
 		strHeight.Format(_T("%d"), winRect.Height());
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_CLASS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_CLASS)->SetWindowText(strClassName);
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_NAME)->EnableWindow(TRUE);
 		GetDlgItem(IDC_EDIT_CURRENT_WINDOW_NAME)->SetWindowText(strWindowText);
+		GetDlgItem(IDC_EDIT_WIDTH)->EnableWindow(TRUE);
 		GetDlgItem(IDC_EDIT_WIDTH)->SetWindowText(strWidth);
+		GetDlgItem(IDC_EDIT_HEIGHT)->EnableWindow(TRUE);
 		GetDlgItem(IDC_EDIT_HEIGHT)->SetWindowText(strHeight);
 	}
+}
+
+
+void CWinSizerDlg::OnBnClickedBtnResize()
+{
+	if (m_pWnd == NULL)
+	{
+		AfxMessageBox(_T("请先捕捉窗口"), MB_ICONWARNING);
+		return;
+	}
+	CRect rect;
+	m_pWnd->GetWindowRect(&rect);
+	UpdateData(TRUE);
+	rect.SetRect(rect.left, rect.top, rect.left + m_winWidth, rect.top + m_winHeight);
+	m_pWnd->MoveWindow(rect);
+}
+
+
+void CWinSizerDlg::OnBnClickedBtnMaximize()
+{
+	if (m_pWnd == NULL)
+		AfxMessageBox(_T("请先捕捉窗口"), MB_ICONWARNING);
+	else
+		m_pWnd->ShowWindow(SW_MAXIMIZE);
+}
+
+
+void CWinSizerDlg::OnBnClickedBtnMinimize()
+{
+	if (m_pWnd == NULL)
+		AfxMessageBox(_T("请先捕捉窗口"), MB_ICONWARNING);
+	else
+		m_pWnd->ShowWindow(SW_MINIMIZE);
+}
+
+
+void CWinSizerDlg::OnBnClickedCheckTop()
+{
+	UpdateData(TRUE);
+	if (m_bTopWindow == TRUE)
+		SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	else
+		SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }

@@ -24,6 +24,7 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
+	CWnd* m_pWnd;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -32,5 +33,12 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedBtnCapture();
-	CButton m_checkCaptureVisibleOnly;
+	afx_msg void OnBnClickedBtnResize();
+	int m_winWidth;
+	int m_winHeight;
+	afx_msg void OnBnClickedBtnMaximize();
+	afx_msg void OnBnClickedBtnMinimize();
+	afx_msg void OnBnClickedCheckTop();
+	BOOL m_bTopWindow;
+	BOOL m_bCaptureVisibleOnly;
 };

@@ -15,7 +15,6 @@
 #define IDC_BTN_MINIMIZE                1007
 #define IDC_CHECK_TOP                   1008
 #define IDC_EDIT_CURRENT_WINDOW_NAME    1009
-#define IDC_CHECK_CAPTURE_VISIBLE       1010
 #define IDC_CHECK_CAPTURE_VISIBLE_ONLY  1010
 
 // Next default values for new objects
